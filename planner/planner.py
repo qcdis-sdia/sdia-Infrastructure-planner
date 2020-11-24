@@ -14,30 +14,30 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-def add_requirements(node, missing_requirements, capable_node_name):
-    """Add the requirements to the node """
-    for req in missing_requirements:
-        req[next(iter(req))]['node'] = capable_node_name
-        if isinstance(node, NodeTemplate):
-            contains_requirement = False
-            for node_requirement in node.requirements:
-                if node_requirement == req:
-                    contains_requirement = True
-                    break
-            if not contains_requirement:
-                node.requirements.append(req)
-        elif isinstance(node, dict):
-            type_name = next(iter(node))
-            if 'requirements' not in node[type_name]:
-                node[type_name]['requirements'] = []
-            node_requirements = node[type_name]['requirements']
-            contains_requirement = False
-            for node_requirement in node_requirements:
-                if node_requirement == req:
-                    contains_requirement = True
-                    break
-            if not contains_requirement:
-                node[type_name]['requirements'].append(req)
+def add_requirement(node, missing_requirement, capable_node_name):
+    """Add the requirement to the node """
+    first_key = next(iter(missing_requirement))
+    missing_requirement[first_key]['node'] = capable_node_name
+    if isinstance(node, NodeTemplate):
+        contains_requirement = False
+        for node_requirement in node.requirements:
+            if node_requirement == missing_requirement:
+                contains_requirement = True
+                break
+        if not contains_requirement:
+            node.requirements.append(missing_requirement)
+    elif isinstance(node, dict):
+        type_name = next(iter(node))
+        if 'requirements' not in node[type_name]:
+            node[type_name]['requirements'] = []
+        node_requirements = node[type_name]['requirements']
+        contains_requirement = False
+        for node_requirement in node_requirements:
+            if node_requirement == missing_requirement:
+                contains_requirement = True
+                break
+        if not contains_requirement:
+            node[type_name]['requirements'].append(missing_requirement)
     return node
 
 
@@ -173,19 +173,25 @@ class Planner:
         if not all_requirements:
             logger.debug('Node: ' + tosca_helper.get_node_type_name(node) + ' has no requirements')
             return
-        matching_node = self.find_best_node_for_requirements(all_requirements)
-
-        # Only add node that is not in node_templates
-        matching_node_type_name = next(iter(matching_node))
-        matching_node_template = tosca_helper.node_type_2_node_template(matching_node, self.all_custom_def)
-        # Add the requirements to the node we analyzed. e.g. docker needed host now we added the type and name of host
-        node = add_requirements(node, all_requirements, matching_node_template.name)
-        if not tosca_helper.contains_node_type(self.required_nodes, matching_node_type_name) and \
+        matching_nodes_dict = self.find_best_node_for_requirements(all_requirements)
+        for capability in matching_nodes_dict:
+            # Only add node that is not in node_templates
+            matching_node = matching_nodes_dict[capability]
+            matching_node_type_name = next(iter(matching_node))
+            matching_node_template = tosca_helper.node_type_2_node_template(matching_node, self.all_custom_def)
+            for req in all_requirements:
+                req_name = next(iter(req))
+                requirement_capability = req[req_name]['capability']
+                if capability == requirement_capability:
+                    # Add the requirements to the node we analyzed. e.g. docker needed host now we added the type and name of host
+                    node = add_requirement(node, req, matching_node_template.name)
+                    break
+            if not tosca_helper.contains_node_type(self.required_nodes, matching_node_type_name) and \
                 not tosca_helper.contains_node_type(self.tosca_template.nodetemplates, matching_node_type_name):
-            logger.info('  Adding: ' + str(matching_node_template.name))
-            self.required_nodes.append(matching_node)
-        # Find matching nodes for the new node's requirements
-        self.add_required_nodes(matching_node)
+                logger.info('  Adding: ' + str(matching_node_template.name))
+                self.required_nodes.append(matching_node)
+            # Find matching nodes for the new node's requirements
+            self.add_required_nodes(matching_node)
 
     def get_all_requirements(self, node):
         """Returns  all requirements for an input node including all parents requirements"""
@@ -255,39 +261,38 @@ class Planner:
         can cover and return the one which covers the most """
         matching_nodes = {}
         number_of_matching_requirement = {}
+        met_requirements = {}
         # Loop requirements to find nodes per requirement
         for req in all_requirements:
-            if 'capability' in req[next(iter(req))]:
-                capability = req[next(iter(req))]['capability']
+            key = next(iter(req))
+            if not req[key]:
+                raise Exception('Requirement: '+str(req)+ ' is not properly defined')
+            if 'capability' in req[key]:
+                capability = req[key]['capability']
                 # Find all nodes in the definitions that have the capability: capability
                 logger.info('  Looking for nodes in node types with capability: ' + capability)
                 capable_nodes = self.get_node_types_by_capability(capability)
-                if capable_nodes:
-                    # Add number of matching capabilities for each node.
-                    # Try to score matching_nodes to return one. The more requirements a node meets the better
-                    for node_type in capable_nodes:
-                        matching_requirement_count = 1
-                        if node_type not in number_of_matching_requirement:
-                            number_of_matching_requirement[node_type] = matching_requirement_count
-                        else:
-                            matching_requirement_count = number_of_matching_requirement[node_type]
-                            matching_requirement_count += 1
-
-                        number_of_matching_requirement[node_type] = matching_requirement_count
-                        logger.info('      Found: ' + str(node_type))
-                    matching_nodes.update(capable_nodes)
-                else:
+                if not capable_nodes:
                     logger.error('Did not find any node with required capability: ' + str(capability))
                     raise Exception('Did not find any node with required capability: ' + str(capability))
+                matching_nodes[capability] = capable_nodes
+
+
         # if we only found 1 return it
         if len(matching_nodes) == 1:
             return matching_nodes
 
-        sorted_number_of_matching_requirement = sorted(number_of_matching_requirement.items(),
-                                                       key=operator.itemgetter(1))
-        index = len(sorted_number_of_matching_requirement) - 1
-        winner_type = next(iter(sorted_number_of_matching_requirement[index]))
-        return {winner_type: matching_nodes[winner_type]}
+        returning_nodes = {}
+        for capability in matching_nodes:
+            nodes = matching_nodes[capability]
+            key = next(iter(nodes))
+            returning_nodes[capability] = {key:nodes[key]}
+        return returning_nodes
+        # sorted_number_of_matching_requirement = sorted(number_of_matching_requirement.items(),
+        #                                                key=operator.itemgetter(1))
+        # index = len(sorted_number_of_matching_requirement) - 1
+        # winner_type = next(iter(sorted_number_of_matching_requirement[index]))
+        # return {winner_type: matching_nodes[winner_type]}
 
     def get_child_nodes(self, parent_node_type_name):
         child_nodes = {}
