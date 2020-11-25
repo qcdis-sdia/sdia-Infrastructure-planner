@@ -6,6 +6,8 @@ import os.path
 import tempfile
 import time
 import unittest
+from urllib.parse import urlparse
+
 import requests
 import yaml
 from toscaparser.tosca_template import ToscaTemplate
@@ -20,44 +22,50 @@ logger.setLevel(logging.DEBUG)
 
 class MyTestCase(unittest.TestCase):
 
+
+    def test_openstack(self):
+        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/openstack.yaml'
+        input_tosca_file_path = self.get_remote_tosca_file(url)
+        self.run_test(input_tosca_file_path)
+
     def test_tic_gluster_fs(self):
-        url = 'https://raw.githubusercontent.com/QCDIS/sdia-tosca/master/examples/glusterFS.yaml'
+        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/glusterFS.yaml'
         input_tosca_file_path = self.get_remote_tosca_file(url)
         self.run_test(input_tosca_file_path)
 
 
     def test_tic(self):
-        url = 'https://raw.githubusercontent.com/QCDIS/sdia-tosca/master/examples/TIC.yaml'
+        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/TIC.yaml'
         input_tosca_file_path = self.get_remote_tosca_file(url)
         self.run_test(input_tosca_file_path)
 
 
     def test_docker(self):
-        url = 'https://raw.githubusercontent.com/QCDIS/sdia-tosca/master/examples/application_example_updated.yaml'
+        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/application_example_updated.yaml'
         input_tosca_file_path = self.get_remote_tosca_file(url)
         self.run_test(input_tosca_file_path)
 
-        url = 'https://raw.githubusercontent.com/QCDIS/sdia-tosca/master/examples/lifeWatch_vre1.yaml'
+        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/lifeWatch_vre1.yaml'
         input_tosca_file_path = self.get_remote_tosca_file(url)
         self.run_test(input_tosca_file_path)
 
     def test_kubernetes(self):
-        url = 'https://raw.githubusercontent.com/QCDIS/sdia-tosca/master/examples/kubernetes.yaml'
+        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/kubernetes.yaml'
         input_tosca_file_path = self.get_remote_tosca_file(url)
         self.run_test(input_tosca_file_path)
 
     def test_topology(self):
-        url = 'https://raw.githubusercontent.com/QCDIS/sdia-tosca/master/examples/topology.yaml'
+        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/topology.yaml'
         input_tosca_file_path = self.get_remote_tosca_file(url)
         self.run_test(input_tosca_file_path)
 
     def test_compute(self):
-        url = 'https://raw.githubusercontent.com/QCDIS/sdia-tosca/master/examples/compute.yaml'
+        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/compute.yaml'
         input_tosca_file_path = self.get_remote_tosca_file(url)
         self.run_test(input_tosca_file_path)
 
     def test_lifeWatch(self):
-        url = 'https://raw.githubusercontent.com/QCDIS/sdia-tosca/master/examples/lifeWatch_vre1.yaml'
+        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/lifeWatch_vre1.yaml'
         tic_tosca = requests.get(url)
         input_tosca_file_path = os.path.join(tempfile.gettempdir(),'TIC.yaml')
         open( input_tosca_file_path, 'wb').write(tic_tosca.content)
@@ -98,6 +106,7 @@ class MyTestCase(unittest.TestCase):
 
     def get_remote_tosca_file(self, url):
         tosca = requests.get(url)
-        input_tosca_file_path = os.path.join(tempfile.gettempdir(),'test_tosca_file.yaml')
+        a = urlparse(url)
+        input_tosca_file_path = os.path.join(tempfile.gettempdir(),os.path.basename(a.path))
         open( input_tosca_file_path, 'wb').write(tosca.content)
         return input_tosca_file_path
