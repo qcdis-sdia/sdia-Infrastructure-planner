@@ -49,10 +49,7 @@ class MyTestCase(unittest.TestCase):
         input_tosca_file_path = self.get_remote_tosca_file(url)
         self.run_test(input_tosca_file_path)
 
-    def test_kubernetes(self):
-        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/kubernetes.yaml'
-        input_tosca_file_path = self.get_remote_tosca_file(url)
-        self.run_test(input_tosca_file_path)
+
 
     def test_topology(self):
         url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/topology.yaml'
