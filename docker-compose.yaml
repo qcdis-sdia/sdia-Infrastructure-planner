@@ -1,0 +1,100 @@
+version: '3'
+services:
+
+  rabbit:
+    image: rabbitmq:3.8-management
+    ports:
+      - "5671-5672:5671-5672"
+      - "15672:15672"
+      - "4369:4369"
+      - "15671:15671"
+
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
+      MYSQL_DATABASE: semaphore
+      MYSQL_USER: semaphore
+      MYSQL_PASSWORD: semaphore
+    #ports:
+      #- "3306:3306"
+
+  semaphore:
+    image: qcdis/docker_ansible_semaphore:v2.5.1-2.9.9
+    environment:
+      SEMAPHORE_DB_USER: semaphore
+      SEMAPHORE_DB_PASS: semaphore
+      SEMAPHORE_DB_HOST: mysql
+      SEMAPHORE_DB_PORT: 3306
+      SEMAPHORE_DB: semaphore
+      SEMAPHORE_PLAYBOOK_PATH: /etc/semaphore
+      SEMAPHORE_ADMIN_PASSWORD: password
+      SEMAPHORE_ADMIN_NAME: "Developer"
+      SEMAPHORE_ADMIN_EMAIL: admin@localhost
+      SEMAPHORE_ADMIN: admin
+      SEMAPHORE_WEB_ROOT: http://0.0.0.0:3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mysql
+
+  mongo:
+    image: mongo:4
+    ports:
+      - "27017:27017"
+
+  mongo-express:
+    image: mongo-express
+    environment:
+        - ME_CONFIG_MONGODB_SERVER=mongo
+        - ME_CONFIG_MONGODB_PORT=27017
+        - ME_CONFIG_BASICAUTH_USERNAME=user
+        - ME_CONFIG_BASICAUTH_PASSWORD=pass
+        - ME_CONFIG_SITE_BASEURL=/mongo-express
+        - VCAP_APP_PORT=8082
+    depends_on:
+        - mongo
+    ports:
+        - "8082:8082"
+
+  sdia-orchestrator:
+    depends_on:
+      - rabbit
+      - mongo
+      - sure-tosca
+    image: qcdis/sdia-orchestrator
+    environment:
+      RABBITMQ_HOST: rabbit
+      MONGO_HOST: mongo
+      SURE_TOSCA_BASE_PATH: http://sure-tosca:8081/tosca-sure/1.0.0
+      CREDENTIAL_SECRET: top_secret
+    ports:
+      - "8080:8080"
+
+  sure-tosca:
+    image: qcdis/sure-tosca
+    ports:
+      - "8081:8081"
+
+  provisioner:
+    depends_on:
+      - rabbit
+      - sure-tosca
+    image: qcdis/sdia-provisioner
+    environment:
+      RABBITMQ_HOST: rabbit
+      SURE_TOSCA_BASE_PATH: http://sure-tosca:8081/tosca-sure/1.0.0
+      CLOUD_STORM_SECRET: 456
+      CREDENTIAL_SECRET: top_secret
+
+  deployer:
+    depends_on:
+      - rabbit
+      - sure-tosca
+    image: qcdis/sdia-deployer:release-1.0.1
+    environment:
+      RABBITMQ_HOST: rabbit
+      SURE_TOSCA_BASE_PATH: http://sure-tosca:8081/tosca-sure/1.0.0
+      SEMAPHORE_BASE_PATH: http://semaphore:3000/api
+
+
