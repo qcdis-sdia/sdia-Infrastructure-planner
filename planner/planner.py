@@ -58,12 +58,15 @@ class Planner:
 
     def __init__(self, tosca_path=None, yaml_dict_tpl=None, spec_service=None):
         if tosca_path:
-            self.path = tosca_path
-            self.tosca_template = ToscaTemplate(tosca_path)
-        elif yaml_dict_tpl:
-            self.yaml_dict_tpl = yaml_dict_tpl
-            logger.info('yaml_dict_tpl:\n' + str(yaml.dump(yaml_dict_tpl)))
-            self.tosca_template = ToscaTemplate(yaml_dict_tpl=yaml_dict_tpl)
+            with open(tosca_path) as file:
+                yaml_dict_tpl = yaml.load(file, Loader=yaml.FullLoader)
+
+        self.yaml_dict_tpl = yaml_dict_tpl
+        logger.info('yaml_dict_tpl:\n' + str(yaml.dump(yaml_dict_tpl)))
+        if 'workflows' in yaml_dict_tpl['topology_template']:
+            self.workflows = yaml_dict_tpl['topology_template'].pop('workflows')
+            logger.info("Ignoring  workflows: " + str(self.workflows))
+        self.tosca_template = ToscaTemplate(yaml_dict_tpl=yaml_dict_tpl)
 
         self.tosca_node_types = self.tosca_template.nodetemplates[0].type_definition.TOSCA_DEF
         self.all_custom_def = self.tosca_template.nodetemplates[0].custom_def

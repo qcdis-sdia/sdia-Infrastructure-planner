@@ -11,6 +11,7 @@ from concurrent.futures import thread
 from threading import Thread
 
 import pika
+import toscaparser
 import yaml
 import sys
 import copy
@@ -102,15 +103,23 @@ def handle_delivery(message, sys=None):
 
     conf = {'url': "http://host"}
     spec_service = SpecService(conf)
-    test_planner = Planner(tosca_path=input_tosca_file_path, spec_service=spec_service)
-    tosca_template = test_planner.resolve_requirements()
-    tosca_template = test_planner.set_node_templates_properties()
-    template_dict = tosca_helper.get_tosca_template_2_topology_template_dictionary(tosca_template)
+    try:
+        planner = Planner(tosca_path=input_tosca_file_path, spec_service=spec_service)
+        tosca_template = planner.resolve_requirements()
+        tosca_template = planner.set_node_templates_properties()
+        template_dict = tosca_helper.get_tosca_template_2_topology_template_dictionary(tosca_template)
 
-    Planner(yaml_dict_tpl=template_dict, spec_service=spec_service)
-    logger.info("template ----: \n" + yaml.dump(template_dict))
+        Planner(yaml_dict_tpl=template_dict, spec_service=spec_service)
 
-    response = {'toscaTemplate': template_dict}
+        if planner.workflows:
+            template_dict['topology_template']['workflows'] = planner.workflows
+
+        logger.info("template ----: \n" + yaml.dump(template_dict))
+        response = {'toscaTemplate': template_dict}
+    except Exception as ex:
+        response = {'error': ex.message}
+
+
     output_current_milli_time = int(round(time.time() * 1000))
     response["creationDate"] = output_current_milli_time
     if queue_name == "planner_queue":
