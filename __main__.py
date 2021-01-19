@@ -111,7 +111,7 @@ def handle_delivery(message, sys=None):
 
         Planner(yaml_dict_tpl=template_dict, spec_service=spec_service)
 
-        if planner.workflows:
+        if hasattr(planner, 'workflows') and  planner.workflows:
             template_dict['topology_template']['workflows'] = planner.workflows
 
         logger.info("template ----: \n" + yaml.dump(template_dict))
