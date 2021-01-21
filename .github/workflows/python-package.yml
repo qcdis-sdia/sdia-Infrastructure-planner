@@ -4,6 +4,10 @@
 name: Python package
 
 on:
+  release:
+    types: [created]
+    tags:
+      - v*
   push:
     branches: [ master, develop ]
   pull_request:
