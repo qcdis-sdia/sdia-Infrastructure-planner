@@ -125,7 +125,7 @@ def handle_delivery(message, sys=None):
     if queue_name == "planner_queue":
         logger.info("Planning")
     logger.info("Returning plan")
-    logger.info("Output message:" + json.dumps(response))
+    # logger.info("Output message:" + json.dumps(response))
     return json.dumps(response)
 
 
