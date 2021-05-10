@@ -22,6 +22,7 @@ logger.setLevel(logging.DEBUG)
 
 class MyTestCase(unittest.TestCase):
 
+
     def test_helm(self):
         url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/helm.yaml'
         input_tosca_file_path = self.get_remote_tosca_file(url)
