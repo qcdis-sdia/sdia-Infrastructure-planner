@@ -23,8 +23,14 @@ logger.setLevel(logging.DEBUG)
 class MyTestCase(unittest.TestCase):
 
 
+    def test_helm(self):
+        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/helm_monitoring.yaml'
+        input_tosca_file_path = self.get_remote_tosca_file(url)
+        self.run_test(input_tosca_file_path)
+
+
     def test_openstack(self):
-        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/openstack.yaml'
+        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/os_provision_workflow.yaml'
         input_tosca_file_path = self.get_remote_tosca_file(url)
         self.run_test(input_tosca_file_path)
 
@@ -35,38 +41,16 @@ class MyTestCase(unittest.TestCase):
 
 
     def test_tic(self):
-        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/TIC.yaml'
+        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/tic_n_mog.yaml'
         input_tosca_file_path = self.get_remote_tosca_file(url)
         self.run_test(input_tosca_file_path)
 
-
-    def test_docker(self):
-        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/application_example_updated.yaml'
-        input_tosca_file_path = self.get_remote_tosca_file(url)
-        self.run_test(input_tosca_file_path)
-
-        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/lifeWatch_vre1.yaml'
-        input_tosca_file_path = self.get_remote_tosca_file(url)
-        self.run_test(input_tosca_file_path)
-
-
-
-    def test_topology(self):
-        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/topology.yaml'
-        input_tosca_file_path = self.get_remote_tosca_file(url)
-        self.run_test(input_tosca_file_path)
 
     def test_compute(self):
         url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/compute.yaml'
         input_tosca_file_path = self.get_remote_tosca_file(url)
         self.run_test(input_tosca_file_path)
 
-    def test_lifeWatch(self):
-        url = 'https://raw.githubusercontent.com/qcdis-sdia/sdia-tosca/master/examples/lifeWatch_vre1.yaml'
-        tic_tosca = requests.get(url)
-        input_tosca_file_path = os.path.join(tempfile.gettempdir(),'TIC.yaml')
-        open( input_tosca_file_path, 'wb').write(tic_tosca.content)
-        self.run_test(input_tosca_file_path)
 
     def get_input_tosca_file_path(self, file_name):
         tosca_path = "../../TOSCA/"

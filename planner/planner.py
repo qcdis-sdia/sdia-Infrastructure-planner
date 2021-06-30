@@ -176,12 +176,17 @@ class Planner:
         if not all_requirements:
             logger.debug('Node: ' + tosca_helper.get_node_type_name(node) + ' has no requirements')
             return
+
         matching_nodes_dict = self.find_best_node_for_requirements(all_requirements)
         for capability in matching_nodes_dict:
             # Only add node that is not in node_templates
             matching_node = matching_nodes_dict[capability]
             matching_node_type_name = next(iter(matching_node))
             matching_node_template = tosca_helper.node_type_2_node_template(matching_node, self.all_custom_def)
+            if tosca_helper.contains_node_type(self.tosca_template.nodetemplates, matching_node_type_name):
+                logger.debug('Node: ' + tosca_helper.get_node_type_name(node) + ' requirement node: '+matching_node_type_name+ ' is already covered')
+                continue
+
             for req in all_requirements:
                 req_name = next(iter(req))
                 requirement_capability = req[req_name]['capability']
